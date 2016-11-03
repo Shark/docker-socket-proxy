@@ -14,7 +14,21 @@
 
 ## Usage
 
-Run `./docker-socket-proxy`
+- Run `./docker-socket-proxy`
+- `export DOCKER_HOST=unix://$(pwd)/docker-socket-proxy.sock`
+
+```
+$ docker info
+Containers: 27
+ Running: 0
+ Paused: 0
+ Stopped: 27
+[...]
+
+$ docker run -it --rm ubuntu:xenial
+docker: Error response from daemon: {"message":"Unauthorized request to POST /v1.24/containers/create"}.
+See 'docker run --help'.
+```
 
 ## Contributing
 1. Fork it!

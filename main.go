@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -30,7 +31,9 @@ func handleErr(writer http.ResponseWriter, status int, err error) {
 	writer.Write(bytes)
 }
 
-type handler struct{}
+type handler struct {
+	outsock string
+}
 
 func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.Method != "GET" {
@@ -38,7 +41,7 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	conn, err := net.DialUnix("unix", nil, &net.UnixAddr{"/var/run/docker.sock", "unix"})
+	conn, err := net.DialUnix("unix", nil, &net.UnixAddr{h.outsock, "unix"})
 	if err != nil {
 		handleErr(writer, 500, err)
 		return
@@ -62,14 +65,29 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	io.Copy(writer, resp.Body)
 }
 
+type config struct {
+	insock  string
+	outsock string
+}
+
+func parseConfig() config {
+	insock := flag.String("in", "docker-socket-proxy.sock", "Incoming socket")
+	outsock := flag.String("out", "/var/run/docker.sock", "Outgoing socket (i.e. Docker socket)")
+	flag.Parse()
+
+	return config{*insock, *outsock}
+}
+
 func main() {
-	sock, err := net.Listen("unix", "docker-socket-proxy.sock")
+	config := parseConfig()
+
+	sock, err := net.Listen("unix", config.insock)
 	if err != nil {
 		log.Fatalf("Can not listen: %v", err)
 		return
 	}
 
-	myHandler := &handler{}
+	myHandler := &handler{config.outsock}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM)
