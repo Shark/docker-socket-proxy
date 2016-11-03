@@ -62,7 +62,23 @@ func (h *handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 		writer.Header()[k] = v
 	}
 	writer.WriteHeader(resp.StatusCode)
-	io.Copy(writer, resp.Body)
+
+	reader := bufio.NewReader(resp.Body)
+	for {
+		line, err := reader.ReadBytes('\n')
+
+		if err == io.EOF {
+			return
+		} else if err != nil {
+			log.Fatalf("Error reading body: %v", err)
+			return
+		}
+
+		writer.Write(line)
+		if flusher, ok := writer.(http.Flusher); ok {
+			flusher.Flush()
+		}
+	}
 }
 
 type config struct {
