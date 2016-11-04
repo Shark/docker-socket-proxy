@@ -87,7 +87,7 @@ type config struct {
 }
 
 func parseConfig() config {
-	insock := flag.String("in", "docker-socket-proxy.sock", "Incoming socket")
+	insock := flag.String("in", "/docker/docker.sock", "Incoming socket")
 	outsock := flag.String("out", "/var/run/docker.sock", "Outgoing socket (i.e. Docker socket)")
 	flag.Parse()
 
